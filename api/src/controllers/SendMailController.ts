@@ -5,6 +5,7 @@ import { SurveysRepository } from "../repositories/SurveysRepository"
 import { SurveysUsersRepository } from "../repositories/SurveysUsersRepository"
 import SendMailService from '../services/SendMailService'
 
+import { resolve } from 'path'
 
 class SendMailController {
 
@@ -35,13 +36,33 @@ class SendMailController {
             })
         }
 
+        const npsPath = resolve(__dirname, "..", "views", "emails", "npsMail.hbs")
+
+        const variables = {
+            name: userAlreadyExists.name,
+            title: surveyAlreadyExists.title,
+            description: surveyAlreadyExists.description,
+            user_id: userAlreadyExists.id,
+            link: process.env.URL_MAIL,
+        }
+
+        const surveyUsersAlreadyExists = await surveysUsersRepository.findOne({
+            where: [{user_id: userAlreadyExists.id}, {value: null}],
+            relations: ["user", "survey"],
+        })
+
+        if(surveyUsersAlreadyExists) {
+            await SendMailService.execute(email, surveyAlreadyExists.title, variables, npsPath)
+            return response.json(surveyAlreadyExists)
+        }
+
         const surveyUser = surveysUsersRepository.create({
             user_id: userAlreadyExists.id,
             survey_id
         })
         await surveysUsersRepository.save(surveyUser)
 
-        await SendMailService.execute(email, surveyAlreadyExists.title, surveyAlreadyExists.description)
+        await SendMailService.execute(email, surveyAlreadyExists.title, variables, npsPath)
 
         return response.json(surveyUser)
     }
