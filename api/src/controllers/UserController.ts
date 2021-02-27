@@ -3,6 +3,7 @@ import { getCustomRepository } from 'typeorm'
 import { UsersRepository } from '../repositories/UserRepository'
 
 class UserController {
+    
     async create(request: Request, response: Response) {
         const { name, email } = request.body
 
